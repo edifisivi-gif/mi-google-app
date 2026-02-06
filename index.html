@@ -1,0 +1,52 @@
+</head>
+<body>
+
+<div class="card">
+    <h3>Registrar Datos</h3>
+    <input type="text" id="nombre" placeholder="Nombre">
+    <input type="email" id="email" placeholder="Email">
+    <input type="text" id="mensaje" placeholder="Mensaje">
+    <button onclick="enviarDatos()">Enviar a Google Sheets</button>
+</div>
+
+<div id="lista">
+    <h3>Datos actuales:</h3>
+    <div id="contenido">Cargando...</div>
+</div>
+
+<script>
+    const URL_API = "https://script.google.com/macros/s/AKfycbwAo3rDKsRnqtmIGTEbrys5gEPMpsDyC7tN9B_2CXEEzJGLrg24bn-G9cG43js-SGNcqg/exec";
+
+    // Función para Leer datos
+    async function leerDatos() {
+        const res = await fetch(URL_API);
+        const datos = await res.json();
+        let html = "";
+        datos.forEach(fila => {
+            html += `<div class="item"><b>${fila.nombre}:</b> ${fila.mensaje}</div>`;
+        });
+        document.getElementById("contenido").innerHTML = html;
+    }
+
+    // Función para Enviar datos
+    async function enviarDatos() {
+        const info = {
+            nombre: document.getElementById("nombre").value,
+            email: document.getElementById("email").value,
+            mensaje: document.getElementById("mensaje").value
+        };
+
+        await fetch(URL_API, {
+            method: 'POST',
+            mode: 'no-cors', // Necesario para Google Apps Script
+            body: JSON.stringify(info)
+        });
+
+        alert("¡Enviado! (Espera unos segundos y recarga)");
+        location.reload();
+    }
+
+    leerDatos();
+</script>
+</body>
+</html>
