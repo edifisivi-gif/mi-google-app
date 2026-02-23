@@ -3,154 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exponente Master Pro</title>
+    <title>Exponente Master v2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --profe: #8b5cf6; --estudiante: #10b981; --trampa: #ef4444; --bg: #0f172a; }
-        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .card { background: #1e293b; padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
-        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 1rem; }
-        button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; color: white; transition: 0.2s; }
+        :root { --primary: #6366f1; --docente: #8b5cf6; --estudiante: #10b981; --bg: #0f172a; }
+        body { font-family: sans-serif; background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .btn { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1.1rem; color: white; }
         .hidden { display: none !important; }
-        #qr-box { background: white; padding: 10px; display: inline-block; margin: 15px; border-radius: 10px; }
-        /* Pantalla de Penalización */
-        .penalty-msg { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--trampa); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; text-align: center; }
-        /* Marcador de puntos */
-        .points-display { font-size: 3rem; color: var(--estudiante); font-weight: bold; margin: 10px 0; }
+        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-    <div id="login-box" class="card">
-        <h2>🚀 Sistema de Exponentes</h2>
-        <input type="text" id="nombre" placeholder="Nombre Estudiante">
-        <input type="text" id="codigo" placeholder="Código Estudiantil">
-        <input type="text" id="grupo" placeholder="Grupo (Opcional)">
-        <button onclick="entrar()" style="background: #6366f1;">Iniciar Sesión</button>
+    <div id="screen-select" class="card">
+        <h1>🚀 Bienvenidos</h1>
+        <p>Selecciona tu rol para continuar:</p>
+        <button class="btn" style="background: var(--estudiante);" onclick="showLogin('estudiante')">SOY ESTUDIANTE</button>
+        <button class="btn" style="background: var(--docente);" onclick="showLogin('docente')">SOY DOCENTE</button>
     </div>
 
-    <div id="teacher-ui" class="card hidden">
-        <h2 style="color: var(--profe);">👨‍🏫 Consola Docente</h2>
-        <div id="qr-box"></div>
-        <select id="game-mode">
-            <option value="Individual">Modo Individual</option>
-            <option value="Grupal">Modo Grupal (Castigo Colectivo)</option>
-        </select>
-        <input type="text" id="ans-master" placeholder="Respuesta del Reto">
-        <button onclick="configurarReto()" style="background: var(--profe);">PUBLICAR RETO</button>
+    <div id="screen-login-st" class="card hidden">
+        <h2>Ingreso Estudiante</h2>
+        <input type="text" id="st-nombre" placeholder="Nombre Completo">
+        <input type="text" id="st-codigo" placeholder="Código Estudiantil">
+        <button class="btn" style="background: var(--estudiante);" onclick="entrarEstudiante()">ENTRAR AL JUEGO</button>
+        <button onclick="location.reload()" style="background:none; border:none; color:gray; cursor:pointer;">← Volver</button>
     </div>
 
-    <div id="student-ui" class="card hidden">
-        <h2 id="st-name-display">Estudiante</h2>
-        <div style="background: #334155; padding: 15px; border-radius: 15px;">
-            <p style="margin:0; font-size: 0.8rem; color: #94a3b8;">TUS PUNTOS ACTUALES</p>
-            <div id="current-points" class="points-display">0</div>
-        </div>
-        <input type="text" id="st-ans" placeholder="Tu respuesta">
-        <button onclick="enviarRespuesta()" style="background: var(--estudiante);">VALIDAR RESPUESTA</button>
-        <p id="st-msg" style="margin-top: 10px; font-size: 0.9rem;"></p>
+    <div id="screen-login-doc" class="card hidden">
+        <h2>Ingreso Docente</h2>
+        <input type="password" id="doc-pass" placeholder="Clave Maestra">
+        <button class="btn" style="background: var(--docente);" onclick="entrarDocente()">ACCEDER</button>
     </div>
 
-    <div id="penalty-ui" class="penalty-msg">
-        <h1 style="font-size: 3rem;">⚠️ ¡TRAMPA!</h1>
-        <p>Saliste del juego por más de 3 segundos.</p>
-        <p>Se han descontado <b>50 puntos</b>.</p>
-        <button onclick="cerrarPenalty()" style="background:white; color:red; width:200px;">VOLVER</button>
-    </div>
+    <div id="game-container"></div>
 
     <script>
-        // AQUÍ CONECTAMOS TU URL
-        const API_URL = "https://script.google.com/macros/s/AKfycbxg886FogQXb5vvBcZWFn-nemdc40uMRyd0zhGZWOSKoHmoSO8MMXRraa4mQjjqQfE/exec";
-        const MASTER_KEY = "PROFE123";
-        let user = { nombre: "", codigo: "", grupo: "" };
-        let esDocente = false;
+        const API_URL = "https://script.google.com/macros/s/AKfycbzDNv8KYPhV3e1sxLMO1_XINXHkbQjUobPJprJeOq9tJCnnGw5inzWSdqCv7IOZd17bjQ/exec";
+const MASTER_KEY = "PROFE123";
+let user = { nombre: "", codigo: "", grupo: "" };
+let esDocente = false;
+let modoActual = "";
 
-        // --- VARIABLES DE CONTROL ---
-        let tiempoFuera; 
-        const MARGEN_GRACIA = 3000; // 3 segundos
-        let esEstudiante = false;
+// --- NAVEGACIÓN ---
+function showLogin(rol) {
+    document.getElementById('screen-select').classList.add('hidden');
+    if(rol === 'estudiante') document.getElementById('screen-login-st').classList.remove('hidden');
+    else document.getElementById('screen-login-doc').classList.remove('hidden');
+}
 
-        // --- FUNCIÓN DE INGRESO ---
-        function entrar() {
-            user.nombre = document.getElementById('nombre').value.trim();
-            user.codigo = document.getElementById('codigo').value.trim();
-            user.grupo = document.getElementById('grupo').value.trim() || "Individual";
+// --- LOGIN DOCENTE ---
+function entrarDocente() {
+    const pass = document.getElementById('doc-pass').value;
+    if(pass === MASTER_KEY) {
+        esDocente = true;
+        document.getElementById('screen-login-doc').classList.add('hidden');
+        renderDocenteUI();
+    } else { alert("Clave incorrecta"); }
+}
 
-            if(!user.nombre || !user.codigo) return alert("Ingresa nombre y código.");
+// --- LOGIN ESTUDIANTE ---
+function entrarEstudiante() {
+    user.nombre = document.getElementById('st-nombre').value.trim();
+    user.codigo = document.getElementById('st-codigo').value.trim();
+    if(!user.nombre || !user.codigo) return alert("Llena tus datos");
 
-            document.getElementById('login-box').classList.add('hidden');
+    document.getElementById('screen-login-st').classList.add('hidden');
+    // Registro inicial
+    fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"login", ...user}) });
+    
+    // Iniciar monitoreo del estado del juego
+    setInterval(monitorearJuego, 3000);
+}
 
-            if(user.codigo === MASTER_KEY) {
-                esDocente = true;
-                document.getElementById('teacher-ui').classList.remove('hidden');
-                new QRCode(document.getElementById("qr-box"), {
-                    text: window.location.href,
-                    width: 150, height: 150
-                });
-            } else {
-                esEstudiante = true;
-                document.getElementById('student-ui').classList.remove('hidden');
-                document.getElementById('st-name-display').innerText = user.nombre;
-                
-                // Registro inicial
-                fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"login", ...user}) });
-                
-                // Iniciar actualización de puntos cada 5 segundos
-                setInterval(actualizarMisPuntos, 5000);
-            }
+// --- RENDERIZADO DOCENTE ---
+function renderDocenteUI() {
+    document.getElementById('game-container').innerHTML = `
+        <div class="card">
+            <h2 style="color:var(--docente)">Panel de Control</h2>
+            <div id="qr-box"></div>
+            <select id="sel-modo">
+                <option value="Individual">Individual (Retos)</option>
+                <option value="Grupal">Grupal (Castigo Colectivo)</option>
+                <option value="Flash">Pregunta Flash (Rapidez)</option>
+            </select>
+            <input type="text" id="ans-master" placeholder="Respuesta Correcta">
+            <button class="btn" style="background:var(--docente)" onclick="publicarReto()">PUBLICAR ACTIVIDAD</button>
+        </div>`;
+    new QRCode(document.getElementById("qr-box"), { text: window.location.href, width: 120, height: 120 });
+}
+
+function publicarReto() {
+    const res = document.getElementById('ans-master').value;
+    const mod = document.getElementById('sel-modo').value;
+    fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"adminConfig", respuesta: res, modo: mod}) });
+    alert("¡Actividad enviada!");
+}
+
+// --- MONITOREO ESTUDIANTE (TIEMPO REAL) ---
+async function monitorearJuego() {
+    if(esDocente) return;
+    try {
+        const resp = await fetch(`${API_URL}?action=getGameState&codigo=${user.codigo}`);
+        const data = await resp.json();
+        
+        if(data.modo !== modoActual) {
+            modoActual = data.modo;
+            renderEstudianteUI(data.modo);
         }
-
-        // --- LÓGICA DEL DOCENTE ---
-        function configurarReto() {
-            let res = document.getElementById('ans-master').value;
-            let mod = document.getElementById('game-mode').value;
-            fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"adminConfig", respuesta: res, modo: mod}) });
-            alert("Reto publicado con éxito.");
+        if(data.puntos !== undefined) {
+            document.getElementById('st-pts').innerText = data.puntos;
         }
+    } catch(e) { console.error("Sincronizando..."); }
+}
 
-        // --- LÓGICA DEL ESTUDIANTE ---
-        function enviarRespuesta() {
-            let ans = document.getElementById('st-ans').value;
-            document.getElementById('st-msg').innerText = "Verificando...";
-            fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"checkAnswer", ...user, intento: ans}) });
-            setTimeout(() => { document.getElementById('st-ans').value = ""; }, 500);
-        }
+function renderEstudianteUI(modo) {
+    let contenido = `<h2>Modo: ${modo}</h2><div class="points-display" id="st-pts">0</div>`;
+    
+    if(modo === "Individual" || modo === "Grupal") {
+        contenido += `
+            <input type="text" id="st-ans" placeholder="Escribe tu respuesta">
+            <button class="btn" style="background:var(--estudiante)" onclick="enviarRespuesta()">ENVIAR</button>`;
+    } else if(modo === "Flash") {
+        contenido += `
+            <p>¡El primero que toque el botón gana!</p>
+            <button class="btn" style="background:#f59e0b; height:150px; font-size:2rem;" onclick="enviarRespuesta('FLASH')">¡LO TENGO!</button>`;
+    }
+    
+    document.getElementById('game-container').innerHTML = `<div class="card">${contenido}</div>`;
+}
 
-        async function actualizarMisPuntos() {
-            if(!esEstudiante) return;
-            try {
-                const resp = await fetch(`${API_URL}?action=getPoints&codigo=${user.codigo}`);
-                const data = await resp.json();
-                if(data.puntos !== undefined) {
-                    document.getElementById('current-points').innerText = data.puntos;
-                }
-            } catch(e) { console.log("Error al leer puntos"); }
-        }
+function enviarRespuesta(valorFlash) {
+    const ans = valorFlash || document.getElementById('st-ans').value;
+    fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"checkAnswer", ...user, intento: ans}) });
+}
 
-        // --- SISTEMA ANTI-TRAMPA (3 SEGUNDOS) ---
-        function iniciarContador() {
-            if(!esEstudiante) return;
-            tiempoFuera = setTimeout(() => {
-                document.getElementById('penalty-ui').style.display = 'flex';
-                fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"penalizar", ...user}) });
-            }, MARGEN_GRACIA);
-        }
-
-        function cancelarContador() {
-            if(tiempoFuera) clearTimeout(tiempoFuera);
-        }
-
-        function cerrarPenalty() {
-            document.getElementById('penalty-ui').style.display = 'none';
-        }
-
-        // Detectores de salida de página
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "hidden") iniciarContador();
-            else cancelarContador();
-        });
-        window.addEventListener("blur", iniciarContador);
-        window.addEventListener("focus", cancelarContador);
+// --- SISTEMA DE 3 SEGUNDOS ---
+let timerTrampa;
+function iniciarTrampa() {
+    if(esDocente || !user.codigo) return;
+    timerTrampa = setTimeout(() => {
+        document.getElementById('penalty-ui').style.display = 'flex';
+        fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"penalizar", ...user}) });
+    }, 3000);
+}
+document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") iniciarTrampa();
+    else clearTimeout(timerTrampa);
+});
     </script>
 </body>
 </html>
