@@ -3,158 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exponente Master: Game Control Universitario</title>
+    <title>Exponente Master Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root { --profe: #8b5cf6; --estudiante: #10b981; --trampa: #ef4444; --bg: #0f172a; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: white; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .card { background: #1e293b; padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #334155; }
         input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 1rem; }
         button { width: 100%; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 10px; color: white; transition: 0.2s; }
-        button:active { transform: scale(0.95); }
         .hidden { display: none !important; }
         #qr-box { background: white; padding: 10px; display: inline-block; margin: 15px; border-radius: 10px; }
-        .penalty-msg { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--trampa); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; text-align: center; padding: 20px; }
-        .status-badge { display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; margin-top: 10px; background: #334155; }
+        /* Pantalla de Penalización */
+        .penalty-msg { position: fixed; top:0; left:0; width:100%; height:100%; background: var(--trampa); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9999; text-align: center; }
+        /* Marcador de puntos */
+        .points-display { font-size: 3rem; color: var(--estudiante); font-weight: bold; margin: 10px 0; }
     </style>
 </head>
 <body>
 
     <div id="login-box" class="card">
         <h2>🚀 Sistema de Exponentes</h2>
-        <p style="color: #94a3b8;">Identificación Universitaria</p>
-        <input type="text" id="nombre" placeholder="Nombre Completo">
+        <input type="text" id="nombre" placeholder="Nombre Estudiante">
         <input type="text" id="codigo" placeholder="Código Estudiantil">
-        <input type="text" id="grupo" placeholder="Nombre de Grupo (Opcional)">
+        <input type="text" id="grupo" placeholder="Grupo (Opcional)">
         <button onclick="entrar()" style="background: #6366f1;">Iniciar Sesión</button>
     </div>
 
     <div id="teacher-ui" class="card hidden">
-        <h2 style="color: var(--profe);">👨‍🏫 Consola de Control</h2>
+        <h2 style="color: var(--profe);">👨‍🏫 Consola Docente</h2>
         <div id="qr-box"></div>
-        <p style="font-size: 0.8rem;">Escanea para entrar</p>
-        
         <select id="game-mode">
-            <option value="Individual">Modo: Individual</option>
-            <option value="Grupal">Modo: Grupal (Castigo Colectivo)</option>
+            <option value="Individual">Modo Individual</option>
+            <option value="Grupal">Modo Grupal (Castigo Colectivo)</option>
         </select>
-        
-        <input type="text" id="ans-master" placeholder="Respuesta Correcta">
-        <button onclick="configurarReto()" style="background: var(--profe);">PUBLICAR RETO (Reinicia puntos)</button>
-        
-        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #334155;">
-            <input type="text" id="target-manual" placeholder="Código o Grupo">
-            <input type="number" id="pts-manual" placeholder="Puntos (ej: 50)">
-            <button onclick="darPuntosManual()" style="background: #f59e0b;">ASIGNAR PUNTOS MANUALES</button>
-        </div>
+        <input type="text" id="ans-master" placeholder="Respuesta del Reto">
+        <button onclick="configurarReto()" style="background: var(--profe);">PUBLICAR RETO</button>
     </div>
 
     <div id="student-ui" class="card hidden">
         <h2 id="st-name-display">Estudiante</h2>
-        <div class="status-badge" id="st-badge">Estado: Protegido 🛡️</div>
-        
-        <div style="background: #334155; padding: 20px; border-radius: 15px; margin: 20px 0;">
-            <p style="margin-top: 0;">Ingresa la respuesta del reto:</p>
-            <input type="text" id="st-ans" placeholder="Ej: x^5">
-            <button onclick="enviarRespuesta()" style="background: var(--estudiante);">VALIDAR RESPUESTA</button>
+        <div style="background: #334155; padding: 15px; border-radius: 15px;">
+            <p style="margin:0; font-size: 0.8rem; color: #94a3b8;">TUS PUNTOS ACTUALES</p>
+            <div id="current-points" class="points-display">0</div>
         </div>
-        
-        <p id="st-msg" style="font-weight: bold;"></p>
-        <p style="font-size: 0.7rem; color: #94a3b8;">⚠️ Si sales de la pestaña perderás 200 puntos (y tu grupo también en modo Grupal).</p>
+        <input type="text" id="st-ans" placeholder="Tu respuesta">
+        <button onclick="enviarRespuesta()" style="background: var(--estudiante);">VALIDAR RESPUESTA</button>
+        <p id="st-msg" style="margin-top: 10px; font-size: 0.9rem;"></p>
     </div>
 
     <div id="penalty-ui" class="penalty-msg">
-        <h1 style="font-size: 3.5rem; margin-bottom: 0;">🚨 TRAMPA 🚨</h1>
-        <p style="font-size: 1.5rem;">Se han restado <b>200 puntos</b>.</p>
-        <p id="penalty-detail" style="max-width: 400px;"></p>
-        <button onclick="cerrarPenalty()" style="background:white; color:red; width:220px; font-size: 1.1rem;">VOLVER AL JUEGO</button>
+        <h1 style="font-size: 3rem;">⚠️ ¡TRAMPA!</h1>
+        <p>Saliste del juego por más de 3 segundos.</p>
+        <p>Se han descontado <b>50 puntos</b>.</p>
+        <button onclick="cerrarPenalty()" style="background:white; color:red; width:200px;">VOLVER</button>
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxNQvTqH8CgEeLkz7TPwzpAHsBcHDnR8M_nmbVYlBIKAHqUXRdugie3n7zmQ3hYa43v3A/exec";
+        // AQUÍ CONECTAMOS TU URL
+        const API_URL = "https://script.google.com/macros/s/AKfycbxg886FogQXb5vvBcZWFn-nemdc40uMRyd0zhGZWOSKoHmoSO8MMXRraa4mQjjqQfE/exec";
         const MASTER_KEY = "PROFE123";
         let user = { nombre: "", codigo: "", grupo: "" };
         let esDocente = false;
 
-        function entrar() {
-            user.nombre = document.getElementById('nombre').value.trim();
-            user.codigo = document.getElementById('codigo').value.trim();
-            user.grupo = document.getElementById('grupo').value.trim() || "Individual";
-
-            if(!user.nombre || !user.codigo) return alert("Por favor ingresa nombre y código.");
-
-            document.getElementById('login-box').classList.add('hidden');
-
-            if(user.codigo === MASTER_KEY) {
-                esDocente = true;
-                document.getElementById('teacher-ui').classList.remove('hidden');
-                new QRCode(document.getElementById("qr-box"), {
-                    text: window.location.href,
-                    width: 150,
-                    height: 150
-                });
-            } else {
-                document.getElementById('student-ui').classList.remove('hidden');
-                document.getElementById('st-name-display').innerText = user.nombre;
-                // Registro inicial en el Google Sheet
-                fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"login", ...user}) });
-            }
-        }
-
-        function configurarReto() {
-            let res = document.getElementById('ans-master').value;
-            let mod = document.getElementById('game-mode').value;
-            fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"adminConfig", respuesta: res, modo: mod}) });
-            alert("Reto Publicado. Los puntos se han escalonado (100, 80, 60...).");
-        }
-
-        function darPuntosManual() {
-            let target = document.getElementById('target-manual').value;
-            let pts = document.getElementById('pts-manual').value;
-            fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"manualScore", grupoTarget: target, codigoTarget: target, puntos: pts}) });
-            alert("Puntos asignados correctamente.");
-        }
-
-        function enviarRespuesta() {
-            let ans = document.getElementById('st-ans').value;
-            if(!ans) return;
-            document.getElementById('st-msg').innerText = "Verificando respuesta...";
-            document.getElementById('st-msg').style.color = "white";
-            
-            fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"checkAnswer", ...user, intento: ans}) });
-            
-            // Simulación visual de envío
-            setTimeout(() => {
-                document.getElementById('st-msg').innerText = "¡Enviado! Si es correcto, verás tus puntos en el tablero.";
-                document.getElementById('st-ans').value = "";
-            }, 1000);
-        }
-
-        function penalizar() {
-            if(esDocente || !user.codigo) return;
-            
-            document.getElementById('penalty-ui').style.display = 'flex';
-            if(user.grupo !== "Individual") {
-                document.getElementById('penalty-detail').innerText = `Por tu acción, todo el grupo "${user.grupo}" ha perdido 200 puntos.`;
-            } else {
-                document.getElementById('penalty-detail').innerText = "Se han descontado 200 puntos de tu cuenta personal.";
-            }
-            
-            fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"penalizar", ...user}) });
-        }
-
-        function cerrarPenalty() {
-            document.getElementById('penalty-ui').style.display = 'none';
-        }
-
-        // --- SISTEMA DE VIGILANCIA ---
-        document.addEventListener("visibilitychange", () => {
-            if (document.visibilityState === "hidden") penalizar();
-        });
-
-        window.addEventListener("blur", () => {
-            penalizar();
-        });
+        // Las funciones de lógica las pondremos en el Paso 3 para que no haya errores
     </script>
 </body>
 </html>
