@@ -1,52 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Control de Clase de Exponentes</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 50px; transition: background 0.3s; }
+        .hidden { display: none; }
+        .penalizado { background-color: #ffcccc; color: red; }
+    </style>
 </head>
 <body>
 
-<div class="card">
-    <h3>Registrar Datos</h3>
-    <input type="text" id="nombre" placeholder="Nombre">
-    <input type="email" id="email" placeholder="Email">
-    <input type="text" id="mensaje" placeholder="Mensaje">
-    <button onclick="enviarDatos()">Enviar a Google Sheets</button>
-</div>
+    <div id="login-section">
+        <h2>Ingreso al Juego</h2>
+        <input type="text" id="nombre" placeholder="Tu Nombre">
+        <input type="text" id="codigo" placeholder="Código de Clase">
+        <button onclick="login()">Entrar</button>
+    </div>
 
-<div id="lista">
-    <h3>Datos actuales:</h3>
-    <div id="contenido">Cargando...</div>
-</div>
+    <div id="game-section" class="hidden">
+        <h1 id="welcome"></h1>
+        <p>¡No salgas de esta pestaña o serás penalizado!</p>
+        </div>
 
-<script>
-    const URL_API = "https://script.google.com/macros/s/AKfycbwAo3rDKsRnqtmIGTEbrys5gEPMpsDyC7tN9B_2CXEEzJGLrg24bn-G9cG43js-SGNcqg/exec";
+    <script>
+        const SCRIPT_URL = "PEGA_AQUI_TU_URL_DE_APPS_SCRIPT";
+        let usuarioActual = { nombre: "", codigo: "" };
+        let estaLogueado = false;
 
-    // Función para Leer datos
-    async function leerDatos() {
-        const res = await fetch(URL_API);
-        const datos = await res.json();
-        let html = "";
-        datos.forEach(fila => {
-            html += `<div class="item"><b>${fila.nombre}:</b> ${fila.mensaje}</div>`;
-        });
-        document.getElementById("contenido").innerHTML = html;
-    }
-
-    // Función para Enviar datos
-    async function enviarDatos() {
-        const info = {
-            nombre: document.getElementById("nombre").value,
-            email: document.getElementById("email").value,
-            mensaje: document.getElementById("mensaje").value
-        };
-
-        await fetch(URL_API, {
+        function login() {
+          usuarioActual.nombre = document.getElementById('nombre').value;
+          usuarioActual.codigo = document.getElementById('codigo').value;
+          
+          fetch(SCRIPT_URL, {
             method: 'POST',
-            mode: 'no-cors', // Necesario para Google Apps Script
-            body: JSON.stringify(info)
+            body: JSON.stringify({ action: "login", ...usuarioActual })
+          }).then(() => {
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('game-section').classList.remove('hidden');
+            document.getElementById('welcome').innerText = "Hola, " + usuarioActual.nombre;
+            estaLogueado = true;
+          });
+        }
+
+        // --- LÓGICA DE DETECCIÓN DE TRAMPA ---
+        function penalizar() {
+          if (!estaLogueado) return;
+          
+          document.body.classList.add('penalizado');
+          alert("¡TRAMPA DETECTADA! Se te han restado puntos.");
+          
+          fetch(SCRIPT_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "penalizar", ...usuarioActual })
+          });
+        }
+
+        // 1. Detecta si cambia de pestaña
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "hidden") {
+            penalizar();
+          }
         });
 
-        alert("¡Enviado! (Espera unos segundos y recarga)");
-        location.reload();
-    }
-
-    leerDatos();
-</script>
+        // 2. Detecta si cambia de aplicación (pierde el foco)
+        window.addEventListener("blur", () => {
+          penalizar();
+        });
+    </script>
 </body>
 </html>
