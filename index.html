@@ -3,155 +3,260 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Exponente Master v2</title>
+    <title>Exponente Master 3.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        :root { --primary: #6366f1; --docente: #8b5cf6; --estudiante: #10b981; --bg: #0f172a; }
-        body { font-family: sans-serif; background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .card { background: #1e293b; padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        .btn { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1.1rem; color: white; }
+        :root { --docente: #8b5cf6; --estudiante: #10b981; --flash: #f59e0b; --bg: #0f172a; --card: #1e293b; --rojo: #ef4444; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .card { background: var(--card); padding: 30px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 1px solid #334155; }
+        .btn { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 1.1rem; color: white; transition: 0.2s; }
+        .btn:active { transform: scale(0.95); }
+        input, select { width: 100%; padding: 14px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; font-size: 1rem; }
         .hidden { display: none !important; }
-        input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; }
+        
+        /* Marcador de Puntos */
+        .points-box { background: #0f172a; padding: 15px; border-radius: 15px; margin: 20px 0; border: 2px solid var(--estudiante); }
+        .points-number { font-size: 3.5rem; font-weight: bold; color: var(--estudiante); margin: 0; }
+        
+        /* Pantalla de Trampa */
+        #penalty-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--rojo); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; text-align: center; padding: 20px; box-sizing: border-box; }
+        
+        #qr-container { background: white; padding: 15px; border-radius: 10px; display: inline-block; margin: 15px 0; }
     </style>
 </head>
 <body>
 
-    <div id="screen-select" class="card">
-        <h1>🚀 Bienvenidos</h1>
-        <p>Selecciona tu rol para continuar:</p>
-        <button class="btn" style="background: var(--estudiante);" onclick="showLogin('estudiante')">SOY ESTUDIANTE</button>
-        <button class="btn" style="background: var(--docente);" onclick="showLogin('docente')">SOY DOCENTE</button>
-    </div>
-
-    <div id="screen-login-st" class="card hidden">
-        <h2>Ingreso Estudiante</h2>
-        <input type="text" id="st-nombre" placeholder="Nombre Completo">
-        <input type="text" id="st-codigo" placeholder="Código Estudiantil">
-        <button class="btn" style="background: var(--estudiante);" onclick="entrarEstudiante()">ENTRAR AL JUEGO</button>
-        <button onclick="location.reload()" style="background:none; border:none; color:gray; cursor:pointer;">← Volver</button>
+    <div id="screen-role" class="card">
+        <h1>🚀 Exponente Master</h1>
+        <p style="color: #94a3b8;">Selecciona cómo deseas ingresar:</p>
+        <button class="btn" style="background: var(--estudiante);" onclick="mostrarPantalla('screen-login-stu')">👨‍🎓 SOY ESTUDIANTE</button>
+        <button class="btn" style="background: var(--docente);" onclick="mostrarPantalla('screen-login-doc')">👨‍🏫 SOY DOCENTE</button>
     </div>
 
     <div id="screen-login-doc" class="card hidden">
-        <h2>Ingreso Docente</h2>
-        <input type="password" id="doc-pass" placeholder="Clave Maestra">
-        <button class="btn" style="background: var(--docente);" onclick="entrarDocente()">ACCEDER</button>
+        <h2 style="color: var(--docente);">Acceso Docente</h2>
+        <input type="password" id="doc-pass" placeholder="Ingresa la Clave Maestra">
+        <button class="btn" style="background: var(--docente);" onclick="loginDocente()">ENTRAR AL PANEL</button>
+        <button class="btn" style="background: transparent; border: 1px solid gray;" onclick="mostrarPantalla('screen-role')">Volver</button>
     </div>
 
-    <div id="game-container"></div>
+    <div id="screen-login-stu" class="card hidden">
+        <h2 style="color: var(--estudiante);">Identificación</h2>
+        <input type="text" id="stu-nombre" placeholder="Nombre Completo">
+        <input type="text" id="stu-codigo" placeholder="Código Estudiantil">
+        <input type="text" id="stu-grupo" placeholder="Nombre de tu Grupo (Opcional)">
+        <button class="btn" style="background: var(--estudiante);" onclick="loginEstudiante()">CONECTAR</button>
+        <button class="btn" style="background: transparent; border: 1px solid gray;" onclick="mostrarPantalla('screen-role')">Volver</button>
+    </div>
+
+    <div id="screen-docente" class="card hidden">
+        <h2 style="color: var(--docente); margin-top:0;">🕹️ Control de Juego</h2>
+        
+        <div id="qr-container"></div>
+        <p style="font-size: 0.8rem; margin-top: 0;">Escanea para jugar</p>
+
+        <div style="background: #334155; padding: 15px; border-radius: 10px; text-align: left;">
+            <label style="font-size: 0.9rem; font-weight: bold;">1. Selecciona el Modo:</label>
+            <select id="doc-modo">
+                <option value="Individual">Individual (Teclado)</option>
+                <option value="Grupal">Grupal (Teclado + Castigo Colectivo)</option>
+                <option value="Flash">Pregunta Flash (Botón Rápido)</option>
+            </select>
+            
+            <label style="font-size: 0.9rem; font-weight: bold;">2. Respuesta Correcta:</label>
+            <input type="text" id="doc-resp" placeholder="Ej: x^5 (vacío para pausar)">
+            
+            <button class="btn" style="background: var(--docente);" onclick="publicarReto()">🚀 PUBLICAR RETO</button>
+        </div>
+
+        <div style="margin-top: 15px; border-top: 1px solid #475569; padding-top: 15px;">
+            <p style="font-size: 0.9rem; margin-bottom: 5px;">⭐ Asignar Puntos Manuales</p>
+            <input type="text" id="doc-target" placeholder="Código o Grupo">
+            <input type="number" id="doc-pts" placeholder="Cantidad de puntos">
+            <button class="btn" style="background: #2563eb; padding: 10px;" onclick="darPuntosManuales()">ENVIAR PUNTOS</button>
+        </div>
+    </div>
+
+    <div id="screen-estudiante" class="card hidden">
+        <h2 id="stu-display-name" style="margin-top:0;">Estudiante</h2>
+        
+        <div class="points-box">
+            <p style="margin:0; font-size: 0.9rem; color: #94a3b8;">TUS PUNTOS</p>
+            <p class="points-number" id="stu-points">0</p>
+        </div>
+
+        <div id="juego-dinamico" style="min-height: 150px; display: flex; flex-direction: column; justify-content: center;">
+            <p style="color: #94a3b8;">Esperando a que el docente inicie la actividad...</p>
+        </div>
+    </div>
+
+    <div id="penalty-screen">
+        <h1 style="font-size: 4rem; margin: 0;">🚨 TRAMPA 🚨</h1>
+        <p style="font-size: 1.2rem;">Has abandonado la página.</p>
+        <p style="font-size: 1.5rem; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 10px;"><b>-50 PUNTOS</b></p>
+        <button class="btn" style="background: white; color: var(--rojo); max-width: 200px;" onclick="cerrarPenalizacion()">ENTENDIDO</button>
+    </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbzDNv8KYPhV3e1sxLMO1_XINXHkbQjUobPJprJeOq9tJCnnGw5inzWSdqCv7IOZd17bjQ/exec";
-const MASTER_KEY = "PROFE123";
-let user = { nombre: "", codigo: "", grupo: "" };
-let esDocente = false;
-let modoActual = "";
+        // LA URL DE TU SCRIPT DE GOOGLE
+        const API_URL = "https://script.google.com/macros/s/AKfycby9gRaOyPzZVpcN0Dey9TlNcIHHU9sO07d-RT_P8m-dfr1EyEUxplT5FheTfF38mkq9Fg/exec";
+        const CLAVE_PROFE = "PROFE123";
 
-// --- NAVEGACIÓN ---
-function showLogin(rol) {
-    document.getElementById('screen-select').classList.add('hidden');
-    if(rol === 'estudiante') document.getElementById('screen-login-st').classList.remove('hidden');
-    else document.getElementById('screen-login-doc').classList.remove('hidden');
-}
+        let user = { nombre: "", codigo: "", grupo: "" };
+        let esEstudiante = false;
+        let modoActualLocal = "";
+        let timerTrampa;
 
-// --- LOGIN DOCENTE ---
-function entrarDocente() {
-    const pass = document.getElementById('doc-pass').value;
-    if(pass === MASTER_KEY) {
-        esDocente = true;
-        document.getElementById('screen-login-doc').classList.add('hidden');
-        renderDocenteUI();
-    } else { alert("Clave incorrecta"); }
-}
-
-// --- LOGIN ESTUDIANTE ---
-function entrarEstudiante() {
-    user.nombre = document.getElementById('st-nombre').value.trim();
-    user.codigo = document.getElementById('st-codigo').value.trim();
-    if(!user.nombre || !user.codigo) return alert("Llena tus datos");
-
-    document.getElementById('screen-login-st').classList.add('hidden');
-    // Registro inicial
-    fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"login", ...user}) });
-    
-    // Iniciar monitoreo del estado del juego
-    setInterval(monitorearJuego, 3000);
-}
-
-// --- RENDERIZADO DOCENTE ---
-function renderDocenteUI() {
-    document.getElementById('game-container').innerHTML = `
-        <div class="card">
-            <h2 style="color:var(--docente)">Panel de Control</h2>
-            <div id="qr-box"></div>
-            <select id="sel-modo">
-                <option value="Individual">Individual (Retos)</option>
-                <option value="Grupal">Grupal (Castigo Colectivo)</option>
-                <option value="Flash">Pregunta Flash (Rapidez)</option>
-            </select>
-            <input type="text" id="ans-master" placeholder="Respuesta Correcta">
-            <button class="btn" style="background:var(--docente)" onclick="publicarReto()">PUBLICAR ACTIVIDAD</button>
-        </div>`;
-    new QRCode(document.getElementById("qr-box"), { text: window.location.href, width: 120, height: 120 });
-}
-
-function publicarReto() {
-    const res = document.getElementById('ans-master').value;
-    const mod = document.getElementById('sel-modo').value;
-    fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"adminConfig", respuesta: res, modo: mod}) });
-    alert("¡Actividad enviada!");
-}
-
-// --- MONITOREO ESTUDIANTE (TIEMPO REAL) ---
-async function monitorearJuego() {
-    if(esDocente) return;
-    try {
-        const resp = await fetch(`${API_URL}?action=getGameState&codigo=${user.codigo}`);
-        const data = await resp.json();
-        
-        if(data.modo !== modoActual) {
-            modoActual = data.modo;
-            renderEstudianteUI(data.modo);
+        // --- NAVEGACIÓN DE PANTALLAS ---
+        function mostrarPantalla(idPantalla) {
+            document.querySelectorAll('.card').forEach(card => card.classList.add('hidden'));
+            document.getElementById(idPantalla).classList.remove('hidden');
         }
-        if(data.puntos !== undefined) {
-            document.getElementById('st-pts').innerText = data.puntos;
+
+        // --- LÓGICA DEL DOCENTE ---
+        function loginDocente() {
+            if (document.getElementById('doc-pass').value === CLAVE_PROFE) {
+                mostrarPantalla('screen-docente');
+                new QRCode(document.getElementById("qr-container"), { text: window.location.href, width: 150, height: 150 });
+            } else {
+                alert("Clave incorrecta");
+            }
         }
-    } catch(e) { console.error("Sincronizando..."); }
-}
 
-function renderEstudianteUI(modo) {
-    let contenido = `<h2>Modo: ${modo}</h2><div class="points-display" id="st-pts">0</div>`;
-    
-    if(modo === "Individual" || modo === "Grupal") {
-        contenido += `
-            <input type="text" id="st-ans" placeholder="Escribe tu respuesta">
-            <button class="btn" style="background:var(--estudiante)" onclick="enviarRespuesta()">ENVIAR</button>`;
-    } else if(modo === "Flash") {
-        contenido += `
-            <p>¡El primero que toque el botón gana!</p>
-            <button class="btn" style="background:#f59e0b; height:150px; font-size:2rem;" onclick="enviarRespuesta('FLASH')">¡LO TENGO!</button>`;
-    }
-    
-    document.getElementById('game-container').innerHTML = `<div class="card">${contenido}</div>`;
-}
+        function publicarReto() {
+            let modo = document.getElementById('doc-modo').value;
+            let respuesta = document.getElementById('doc-resp').value;
+            
+            fetch(API_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: JSON.stringify({ action: "publicarReto", modo: modo, respuesta: respuesta })
+            });
+            alert("¡Reto enviado a las pantallas de los estudiantes!");
+        }
 
-function enviarRespuesta(valorFlash) {
-    const ans = valorFlash || document.getElementById('st-ans').value;
-    fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"checkAnswer", ...user, intento: ans}) });
-}
+        function darPuntosManuales() {
+            let target = document.getElementById('doc-target').value;
+            let pts = document.getElementById('doc-pts').value;
+            if(!target || !pts) return alert("Llena los campos");
+            fetch(API_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: JSON.stringify({ action: "puntosManuales", objetivo: target, puntos: pts })
+            });
+            alert("Puntos en camino...");
+        }
 
-// --- SISTEMA DE 3 SEGUNDOS ---
-let timerTrampa;
-function iniciarTrampa() {
-    if(esDocente || !user.codigo) return;
-    timerTrampa = setTimeout(() => {
-        document.getElementById('penalty-ui').style.display = 'flex';
-        fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"penalizar", ...user}) });
-    }, 3000);
-}
-document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "hidden") iniciarTrampa();
-    else clearTimeout(timerTrampa);
-});
+        // --- LÓGICA DEL ESTUDIANTE ---
+        function loginEstudiante() {
+            user.nombre = document.getElementById('stu-nombre').value.trim();
+            user.codigo = document.getElementById('stu-codigo').value.trim();
+            user.grupo = document.getElementById('stu-grupo').value.trim();
+            
+            if (!user.nombre || !user.codigo) return alert("Nombre y Código son obligatorios");
+
+            esEstudiante = true;
+            document.getElementById('stu-display-name').innerText = user.nombre;
+            mostrarPantalla('screen-estudiante');
+
+            // Registrar en Google Sheets
+            fetch(API_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: JSON.stringify({ action: "login", ...user })
+            });
+
+            // Iniciar sincronización de pantalla y puntos cada 3 segundos
+            setInterval(sincronizarConServidor, 3000);
+            sincronizarConServidor(); // Ejecutar la primera vez de inmediato
+        }
+
+        // Función que actualiza la pantalla del estudiante
+        async function sincronizarConServidor() {
+            if (!esEstudiante) return;
+            try {
+                let response = await fetch(`${API_URL}?action=getEstado&codigo=${user.codigo}`);
+                let data = await response.json();
+
+                // 1. Actualizar Puntos
+                if (data.puntos !== undefined) {
+                    document.getElementById('stu-points').innerText = data.puntos;
+                }
+
+                // 2. Actualizar la interfaz si el profe cambió el modo
+                if (data.modo !== modoActualLocal) {
+                    modoActualLocal = data.modo;
+                    renderizarModoJuego(data.modo);
+                }
+            } catch (error) {
+                console.log("Sincronizando..."); // Fallo silencioso si la red está lenta
+            }
+        }
+
+        function renderizarModoJuego(modo) {
+            let contenedor = document.getElementById('juego-dinamico');
+            
+            if (modo === "Individual" || modo === "Grupal") {
+                contenedor.innerHTML = `
+                    <p style="margin:5px 0; color: #cbd5e1;">MODO: <b>${modo.toUpperCase()}</b></p>
+                    <input type="text" id="stu-ans" placeholder="Escribe tu respuesta aquí...">
+                    <button class="btn" style="background: var(--estudiante);" onclick="enviarRespuesta()">ENVIAR RESPUESTA</button>`;
+            } 
+            else if (modo === "Flash") {
+                contenedor.innerHTML = `
+                    <p style="margin:5px 0; color: #cbd5e1;">MODO FLASH ⚡</p>
+                    <button class="btn" style="background: var(--flash); height: 120px; font-size: 2rem; border-radius: 20px;" onclick="enviarRespuesta('FLASH')">¡LO TENGO!</button>`;
+            } 
+            else {
+                contenedor.innerHTML = `<p style="color: #94a3b8;">Esperando a que el docente inicie la actividad...</p>`;
+            }
+        }
+
+        function enviarRespuesta(valorFlash) {
+            let respuesta = valorFlash || document.getElementById('stu-ans').value;
+            if (!respuesta) return;
+
+            // Feedback visual temporal
+            let btn = event.target;
+            let textoOriginal = btn.innerText;
+            btn.innerText = "¡Enviado!";
+            btn.style.opacity = "0.7";
+            setTimeout(() => { btn.innerText = textoOriginal; btn.style.opacity = "1"; }, 1500);
+
+            if(!valorFlash) document.getElementById('stu-ans').value = ""; // Limpiar input
+
+            fetch(API_URL, {
+                method: 'POST', mode: 'no-cors',
+                body: JSON.stringify({ action: "enviarRespuesta", ...user, intento: respuesta })
+            });
+        }
+
+        // --- SISTEMA ANTI-TRAMPA (Regla de los 3 Segundos) ---
+        function iniciarAlarmaTrampa() {
+            if (!esEstudiante) return;
+            timerTrampa = setTimeout(() => {
+                document.getElementById('penalty-screen').style.display = 'flex';
+                // Enviar el castigo al Excel
+                fetch(API_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    body: JSON.stringify({ action: "penalizar", ...user })
+                });
+            }, 3000); // 3 segundos de tolerancia
+        }
+
+        function cancelarAlarmaTrampa() {
+            if (timerTrampa) clearTimeout(timerTrampa);
+        }
+
+        function cerrarPenalizacion() {
+            document.getElementById('penalty-screen').style.display = 'none';
+        }
+
+        // Detectores del navegador para móviles y PC
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") iniciarAlarmaTrampa();
+            else cancelarAlarmaTrampa();
+        });
+        window.addEventListener("blur", iniciarAlarmaTrampa);
+        window.addEventListener("focus", cancelarAlarmaTrampa);
+
     </script>
 </body>
 </html>
