@@ -65,7 +65,92 @@
         let user = { nombre: "", codigo: "", grupo: "" };
         let esDocente = false;
 
-        // Las funciones de lógica las pondremos en el Paso 3 para que no haya errores
+        // --- VARIABLES DE CONTROL ---
+        let tiempoFuera; 
+        const MARGEN_GRACIA = 3000; // 3 segundos
+        let esEstudiante = false;
+
+        // --- FUNCIÓN DE INGRESO ---
+        function entrar() {
+            user.nombre = document.getElementById('nombre').value.trim();
+            user.codigo = document.getElementById('codigo').value.trim();
+            user.grupo = document.getElementById('grupo').value.trim() || "Individual";
+
+            if(!user.nombre || !user.codigo) return alert("Ingresa nombre y código.");
+
+            document.getElementById('login-box').classList.add('hidden');
+
+            if(user.codigo === MASTER_KEY) {
+                esDocente = true;
+                document.getElementById('teacher-ui').classList.remove('hidden');
+                new QRCode(document.getElementById("qr-box"), {
+                    text: window.location.href,
+                    width: 150, height: 150
+                });
+            } else {
+                esEstudiante = true;
+                document.getElementById('student-ui').classList.remove('hidden');
+                document.getElementById('st-name-display').innerText = user.nombre;
+                
+                // Registro inicial
+                fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"login", ...user}) });
+                
+                // Iniciar actualización de puntos cada 5 segundos
+                setInterval(actualizarMisPuntos, 5000);
+            }
+        }
+
+        // --- LÓGICA DEL DOCENTE ---
+        function configurarReto() {
+            let res = document.getElementById('ans-master').value;
+            let mod = document.getElementById('game-mode').value;
+            fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"adminConfig", respuesta: res, modo: mod}) });
+            alert("Reto publicado con éxito.");
+        }
+
+        // --- LÓGICA DEL ESTUDIANTE ---
+        function enviarRespuesta() {
+            let ans = document.getElementById('st-ans').value;
+            document.getElementById('st-msg').innerText = "Verificando...";
+            fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"checkAnswer", ...user, intento: ans}) });
+            setTimeout(() => { document.getElementById('st-ans').value = ""; }, 500);
+        }
+
+        async function actualizarMisPuntos() {
+            if(!esEstudiante) return;
+            try {
+                const resp = await fetch(`${API_URL}?action=getPoints&codigo=${user.codigo}`);
+                const data = await resp.json();
+                if(data.puntos !== undefined) {
+                    document.getElementById('current-points').innerText = data.puntos;
+                }
+            } catch(e) { console.log("Error al leer puntos"); }
+        }
+
+        // --- SISTEMA ANTI-TRAMPA (3 SEGUNDOS) ---
+        function iniciarContador() {
+            if(!esEstudiante) return;
+            tiempoFuera = setTimeout(() => {
+                document.getElementById('penalty-ui').style.display = 'flex';
+                fetch(API_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({action:"penalizar", ...user}) });
+            }, MARGEN_GRACIA);
+        }
+
+        function cancelarContador() {
+            if(tiempoFuera) clearTimeout(tiempoFuera);
+        }
+
+        function cerrarPenalty() {
+            document.getElementById('penalty-ui').style.display = 'none';
+        }
+
+        // Detectores de salida de página
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden") iniciarContador();
+            else cancelarContador();
+        });
+        window.addEventListener("blur", iniciarContador);
+        window.addEventListener("focus", cancelarContador);
     </script>
 </body>
 </html>
