@@ -1,71 +1,111 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Control de Clase de Exponentes</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exponente Master - Control de Misión</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 50px; transition: background 0.3s; }
+        :root { --primary: #6366f1; --danger: #ef4444; --success: #22c55e; --bg: #0f172a; }
+        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg); color: white; margin: 0; display: flex; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
+        .card { background: #1e293b; padding: 2.5rem; border-radius: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.3); width: 90%; max-width: 420px; text-align: center; border: 1px solid #334155; }
+        h1 { margin-top: 0; font-size: 1.8rem; color: #818cf8; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #334155; border-radius: 10px; background: #0f172a; color: white; box-sizing: border-box; }
+        button { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: transform 0.2s; margin-top: 10px; }
+        button:active { transform: scale(0.98); }
         .hidden { display: none; }
-        .penalizado { background-color: #ffcccc; color: red; }
+        .stat-box { background: #334155; padding: 15px; border-radius: 12px; margin: 20px 0; }
+        #penalty-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--danger); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; display: none; }
     </style>
 </head>
 <body>
 
-    <div id="login-section">
-        <h2>Ingreso al Juego</h2>
-        <input type="text" id="nombre" placeholder="Tu Nombre">
-        <input type="text" id="codigo" placeholder="Código de Clase">
-        <button onclick="login()">Entrar</button>
+    <div id="login-screen" class="card">
+        <h1>⚡ Exponente Master</h1>
+        <p>Ingresa para comenzar el juego</p>
+        <input type="text" id="nombre" placeholder="Tu nombre completo">
+        <input type="text" id="codigo" placeholder="Código de la clase">
+        <button onclick="conectar()">Entrar al Desafío</button>
     </div>
 
-    <div id="game-section" class="hidden">
-        <h1 id="welcome"></h1>
-        <p>¡No salgas de esta pestaña o serás penalizado!</p>
+    <div id="game-screen" class="card hidden">
+        <h2 id="welcome-user">¡Bienvenido!</h2>
+        <div class="stat-box">
+            <p>Estado: <span id="status" style="color: var(--success); font-weight: bold;">VIGILANDO 🛡️</span></p>
         </div>
+        <p style="font-size: 0.9rem; color: #94a3b8;">No cambies de pestaña ni cierres el navegador. El sistema detectará cualquier intento de trampa.</p>
+        
+        <hr style="border: 0; border-top: 1px solid #334155; margin: 20px 0;">
+        
+        <p>¿Resolviste un reto del pizarrón?</p>
+        <button onclick="enviarPuntos()" style="background: var(--success);">¡Reclamar +50 Puntos!</button>
+    </div>
+
+    <div id="penalty-overlay">
+        <h1 style="color: white; font-size: 3rem;">⚠️ ¡TRAMPA!</h1>
+        <p style="font-size: 1.2rem;">Has salido de la aplicación.</p>
+        <p>Se ha enviado un reporte automático a la base de datos.</p>
+        <button onclick="regresar()" style="background: white; color: var(--danger); width: 200px;">Regresar</button>
+    </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxA7ypoJD02Jo_wBsSmsgFHKt-Le-XWoYkj01avHt3gYQ0_OaKJUNajmxq9vdLtyb_hvw/exec";
-        let usuarioActual = { nombre: "", codigo: "" };
-        let estaLogueado = false;
+        const API_URL = "https://script.google.com/macros/s/AKfycbzHBVlfzySM3RpV0nmhCsWme-dpfz5WKJsWK5TABNmCAiU6NHo3zxZ5kGg2GFMkkxQpJg/exec";
+        let usuario = { nombre: "", codigo: "" };
+        let enJuego = false;
 
-        function login() {
-          usuarioActual.nombre = document.getElementById('nombre').value;
-          usuarioActual.codigo = document.getElementById('codigo').value;
-          
-          fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: "login", ...usuarioActual })
-          }).then(() => {
-            document.getElementById('login-section').classList.add('hidden');
-            document.getElementById('game-section').classList.remove('hidden');
-            document.getElementById('welcome').innerText = "Hola, " + usuarioActual.nombre;
-            estaLogueado = true;
-          });
+        async function conectar() {
+            usuario.nombre = document.getElementById('nombre').value.trim();
+            usuario.codigo = document.getElementById('codigo').value.trim();
+
+            if(!usuario.nombre || !usuario.codigo) return alert("Llena los datos");
+
+            // Login visual inmediato
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            document.getElementById('welcome-user').innerText = "Agente: " + usuario.nombre;
+            enJuego = true;
+
+            // Registro en Sheet
+            enviarDatos("login");
         }
 
-        // --- LÓGICA DE DETECCIÓN DE TRAMPA ---
+        function enviarPuntos() {
+            alert("¡Puntos enviados! Revisa el tablero del profesor.");
+            enviarDatos("puntos");
+        }
+
         function penalizar() {
-          if (!estaLogueado) return;
-          
-          document.body.classList.add('penalizado');
-          alert("¡TRAMPA DETECTADA! Se te han restado puntos.");
-          
-          fetch(SCRIPT_URL, {
-            method: 'POST',
-            body: JSON.stringify({ action: "penalizar", ...usuarioActual })
-          });
+            if(!enJuego) return;
+            document.getElementById('penalty-overlay').style.display = 'flex';
+            enviarDatos("penalizar");
         }
 
-        // 1. Detecta si cambia de pestaña
+        function regresar() {
+            document.getElementById('penalty-overlay').style.display = 'none';
+        }
+
+        async function enviarDatos(accion) {
+            // Usamos 'no-cors' para evitar problemas de seguridad simples de Google
+            fetch(API_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify({
+                    action: accion,
+                    nombre: usuario.nombre,
+                    codigo: usuario.codigo
+                })
+            });
+        }
+
+        // EVENTOS DE DETECCIÓN
         document.addEventListener("visibilitychange", () => {
-          if (document.visibilityState === "hidden") {
-            penalizar();
-          }
+            if (document.visibilityState === "hidden") penalizar();
         });
 
-        // 2. Detecta si cambia de aplicación (pierde el foco)
         window.addEventListener("blur", () => {
-          penalizar();
+            penalizar();
         });
     </script>
+</body>
+</html>
 </body>
 </html>
